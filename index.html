@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101b1b">
+  <meta name="description" content="वीरभूमि — एक मौलिक त्रिविमीय भारतीय रण-क्रीड़ा।">
+  <title>वीरभूमि — रणक्षेत्र</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Hindi&family=Yatra+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="loading" class="loading-screen">
+    <div class="loading-mark">वी</div>
+    <h1>वीरभूमि</h1>
+    <p>रणक्षेत्र जाग्रत हो रहा है…</p>
+    <div class="loading-track"><i></i></div>
+  </div>
+
+  <main id="app" class="app-shell" aria-label="वीरभूमि रणक्षेत्र">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-emblem">वी</div>
+        <div><div class="brand-name">वीरभूमि</div><div class="brand-sub">रणक्षेत्र</div></div>
+      </div>
+      <div class="player-strip">
+        <div class="rank-mark">✦</div>
+        <div class="player-meta"><b id="player-level">स्तर १</b><span id="player-rank">नवदीक्षित योद्धा</span></div>
+        <div class="xp-mini"><div class="xp-line"><i id="top-xp-fill"></i></div><small id="top-xp-text">० / १०० अनुभव</small></div>
+      </div>
+      <div class="wallet">
+        <span class="coin-symbol">◈</span><b id="coin-count">०</b><span class="coin-name">रणमुद्रा</span>
+      </div>
+      <button class="icon-button" data-panel="settings" aria-label="दृश्य-विन्यास">⚙</button><button class="icon-button" id="sound-toggle" aria-label="ध्वनि बदलें">♫</button>
+    </header>
+
+    <section class="hero-layout">
+      <div class="hero-copy">
+        <div class="eyebrow"><span></span> प्राचीन धरा · नवीन रणकला</div>
+        <h1>अपना <em>पराक्रम</em><br>स्वयं लिखो।</h1>
+        <p class="hero-description">दुर्गों, मरुभूमि और प्राचीन नगरों के बीच अपना रणकौशल सिद्ध करो। अस्त्र चुनो, विरोधियों का सामना करो और अपने दल में सर्वोच्च स्थान पाओ।</p>
+        <div class="hero-actions">
+          <button class="primary-button" id="play-button"><span>⚔</span> रण में प्रवेश</button>
+          <button class="secondary-button" id="training-button">अभ्यास-भूमि</button>
+        </div>
+        <div class="hero-facts">
+          <div><b>०१</b><span>स्वतन्त्र रण</span></div>
+          <div><b>०२</b><span>त्रिविमीय क्षेत्र</span></div>
+          <div><b>०३</b><span>स्थायी प्रगति</span></div>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="sun-disc"></div><div class="art-mountain m1"></div><div class="art-mountain m2"></div>
+        <div class="fort fort-back"></div><div class="fort fort-front"></div>
+        <div class="warrior-silhouette"><div class="warrior-head"></div><div class="warrior-body"></div><div class="warrior-cloak"></div><div class="warrior-spear"></div></div>
+        <div class="art-caption">मरु-दुर्ग · प्रथम रणभूमि</div>
+      </div>
+    </section>
+
+    <nav class="main-nav" aria-label="मुख्य विभाग">
+      <button class="nav-item active" data-panel="home">⌂ <span>मुख्य द्वार</span></button>
+      <button class="nav-item" data-panel="arsenal">⚔ <span>अस्त्रागार</span></button>
+      <button class="nav-item" data-panel="pass">✧ <span>ऋतु-पुरस्कार</span></button>
+      <button class="nav-item" data-panel="shop">◈ <span>विक्रयशाला</span></button>
+      <button class="nav-item" data-panel="missions">☷ <span>अभियान</span></button>
+    </nav>
+
+    <section class="content-grid">
+      <article class="feature-card season-card">
+        <div class="card-kicker">वर्तमान ऋतु · प्रथम अध्याय</div>
+        <h2>मरु-दुर्ग का<br><em>आह्वान</em></h2>
+        <p>रणभूमि में उतरकर अनुभव और रणमुद्राएँ अर्जित करो। प्रत्येक उपलब्धि तुम्हें अगले पुरस्कार के समीप ले जाएगी।</p>
+        <div class="season-progress"><div><span>ऋतु-स्तर</span><b id="pass-level">१ / २०</b></div><div class="progress-track"><i id="pass-progress"></i></div></div>
+        <button class="text-button" data-open="pass">पुरस्कार देखो <span>↗</span></button>
+      </article>
+      <article class="feature-card mission-card">
+        <div class="card-kicker">आज के पराक्रम</div>
+        <h2>तुम्हारा अगला<br><em>लक्ष्य</em></h2>
+        <div class="mission-line"><span class="mission-icon">⚔</span><div><b>पाँच विरोधियों को परास्त करो</b><small id="mission-kills">० / ५ परास्त</small></div><strong>+७५</strong></div>
+        <div class="mission-line"><span class="mission-icon">🏹</span><div><b>एक रण पूरा करो</b><small id="mission-match">० / १ रण</small></div><strong>+५०</strong></div>
+        <button class="text-button" data-open="missions">सभी अभियान देखो <span>↗</span></button>
+      </article>
+      <article class="feature-card stats-card">
+        <div class="card-kicker">तुम्हारा लेखा</div>
+        <div class="stat-row"><div><small>कुल विजय</small><b id="stat-wins">०</b></div><div><small>परास्त विरोधी</small><b id="stat-kills">०</b></div><div><small>कुल रण</small><b id="stat-matches">०</b></div></div>
+        <div class="stat-note">तुम्हारी प्रगति इसी यन्त्र के इस अन्वेषक में सुरक्षित रहती है।</div>
+      </article>
+    </section>
+
+    <footer><span>वीरभूमि · एक मौलिक रण-क्रीड़ा</span><span>पराक्रम · धैर्य · विजय</span></footer>
+  </main>
+
+  <section id="game-screen" class="game-screen hidden">
+    <canvas id="game-canvas"></canvas>
+    <div class="game-vignette"></div>
+    <div class="hud-top">
+      <div class="hud-title"><b>वीरभूमि</b><small id="mode-label">मरु-दुर्ग · रण</small><small id="fps-counter" class="fps-counter">-- FPS</small></div>
+      <div class="match-objective"><small>लक्ष्य</small><b><span id="kill-count">०</span> / १०</b></div>
+      <div class="hud-health"><small>जीवन-शक्ति</small><div class="health-bar"><i id="health-fill"></i></div><b id="health-text">१००</b></div>
+      <button id="game-settings" class="hud-settings">विन्यास ⚙</button><button id="exit-game" class="hud-exit">त्यागें ✕</button>
+    </div>
+    <div class="crosshair"><i></i><b></b></div>
+    <div class="hit-flash" id="hit-flash"></div>
+    <div class="hud-bottom">
+      <div class="weapon-panel"><small>सज्जित अस्त्र</small><b id="weapon-name">अग्नि-राइफल</b><span id="ammo-count">३० / १२०</span><select id="weapon-select" aria-label="अस्त्र चुनें"><option value="0">१ · अग्नि-राइफल</option><option value="1">२ · वज्र-वेग अस्त्र</option><option value="2">३ · गर्जन-भेदी</option><option value="3">४ · दूरवेधी अस्त्र</option></select></div>
+      <div class="move-hint" id="move-hint">W A S D — चलें · माउस — लक्ष्य · अंतराल — कूदें</div>
+      <button id="reload-button" class="reload-button">पुनः सज्ज</button>
+      <button id="fire-button" class="fire-button">प्रहार</button>
+      <button id="jump-button" class="jump-button">कूदें</button>
+    </div>
+    <div class="mobile-controls">
+      <div id="joystick" class="joystick"><div id="stick-knob"></div></div>
+      <div class="mobile-right-hint">दृष्टि घुमाने हेतु यहाँ खींचें</div>
+    </div>
+    <div id="match-result" class="match-result hidden">
+      <div class="result-panel">
+        <div class="result-emblem">✦</div><div class="card-kicker" id="result-kicker">रण समाप्त</div>
+        <h2 id="result-title">विजय!</h2><p id="result-copy">तुमने पराक्रम दिखाया।</p>
+        <div class="result-rewards"><div><b id="reward-xp">+१००</b><small>अनुभव</small></div><div><b id="reward-coins">+५०</b><small>रणमुद्रा</small></div><div><b id="reward-kills">१०</b><small>परास्त</small></div></div>
+        <button id="continue-button" class="primary-button">मुख्य द्वार पर लौटें</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="panel-backdrop" class="panel-backdrop hidden">
+    <section class="drawer">
+      <button id="close-panel" class="close-panel">✕</button>
+      <div class="card-kicker" id="panel-kicker">वीरभूमि</div>
+      <h2 id="panel-title">अस्त्रागार</h2>
+      <div id="panel-content"></div>
+    </section>
+  </div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
