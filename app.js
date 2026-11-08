@@ -106,7 +106,29 @@ const joystick={x:0,y:0,active:false,pointer:null};
 let lastReward=null;
 const materialCache=new Map();
 function mat(color,rough=.85,metalness=0){const key=`${color}-${rough}-${metalness}`;if(!materialCache.has(key))materialCache.set(key,new THREE.MeshStandardMaterial({color,roughness:rough,metalness}));return materialCache.get(key);}
-function noiseTexture(baseA,baseB){const size=256,data=new Uint8Array(size*size*4);for(let i=0;i<size*size;i++){const n=Math.random(),v=baseA+(baseB-baseA)*n;data[i*4]=Math.min(255,v*1.05);data[i*4+1]=Math.min(255,v);data[i*4+2]=Math.min(255,v*.88);data[i*4+3]=255;}const tex=new THREE.DataTexture(data,size,size,THREE.RGBAFormat);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(9,9);tex.colorSpace=THREE.SRGBColorSpace;tex.magFilter=THREE.LinearFilter;tex.minFilter=THREE.LinearMipmapLinearFilter;tex.generateMipmaps=true;tex.needsUpdate=true;return tex;}
+function noiseTexture(baseA,baseB){
+ const size=512,canvas=document.createElement("canvas");canvas.width=canvas.height=size;
+ const ctx=canvas.getContext("2d"),image=ctx.createImageData(size,size),height=new Float32Array(size*size);
+ const grids=[new Float32Array(9*9),new Float32Array(25*25),new Float32Array(65*65)];
+ grids.forEach(g=>{for(let i=0;i<g.length;i++)g[i]=Math.random();});
+ const smooth=t=>t*t*(3-2*t);
+ const sample=(grid,n,x,y)=>{const fx=x/size*(n-1),fy=y/size*(n-1),ix=Math.floor(fx),iy=Math.floor(fy),tx=smooth(fx-ix),ty=smooth(fy-iy),a=grid[iy*n+ix],b=grid[iy*n+Math.min(n-1,ix+1)],c=grid[Math.min(n-1,iy+1)*n+ix],d=grid[Math.min(n-1,iy+1)*n+Math.min(n-1,ix+1)];return (a+(b-a)*tx)*(1-ty)+(c+(d-c)*tx)*ty;};
+ for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+  const i=y*size+x,n=sample(grids[0],9,x,y)*.52+sample(grids[1],25,x,y)*.31+sample(grids[2],65,x,y)*.17;
+  const dune=.5+.19*Math.sin(x*.027+y*.012+Math.sin(y*.018)*2)+.09*Math.sin(x*.061-y*.033);
+  const h=Math.max(0,Math.min(1,n*.58+dune*.42));height[i]=h;
+  const v=baseA+(baseB-baseA)*(.22+h*.78),grain=(Math.random()-.5)*5;
+  image.data[i*4]=Math.max(0,Math.min(255,v*1.06+grain));
+  image.data[i*4+1]=Math.max(0,Math.min(255,v+grain));
+  image.data[i*4+2]=Math.max(0,Math.min(255,v*.84+grain));
+  image.data[i*4+3]=255;
+ }
+ ctx.putImageData(image,0,0);
+ const tex=new THREE.CanvasTexture(canvas);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(7,7);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=8;tex.generateMipmaps=true;tex.minFilter=THREE.LinearMipmapLinearFilter;
+ const normalData=new Uint8Array(size*size*4);
+ for(let y=0;y<size;y++)for(let x=0;x<size;x++){const i=y*size+x,l=height[y*size+Math.max(0,x-1)],r=height[y*size+Math.min(size-1,x+1)],u=height[Math.max(0,y-1)*size+x],d=height[Math.min(size-1,y+1)*size+x],nx=(l-r)*3,ny=(u-d)*3,nz=1,len=Math.hypot(nx,ny,nz);normalData[i*4]=(nx/len*.5+.5)*255;normalData[i*4+1]=(ny/len*.5+.5)*255;normalData[i*4+2]=(nz/len*.5+.5)*255;normalData[i*4+3]=255;}
+ const normal=new THREE.DataTexture(normalData,size,size,THREE.RGBAFormat);normal.wrapS=normal.wrapT=THREE.RepeatWrapping;normal.repeat.set(7,7);normal.magFilter=THREE.LinearFilter;normal.minFilter=THREE.LinearMipmapLinearFilter;normal.generateMipmaps=true;normal.needsUpdate=true;tex.userData.normalMap=normal;return tex;
+}
 const queuedBoxes=[];
 function box(w,h,d,color,x,y,z,material=null,shadow=true){const item={w,h,d,color,material,shadow,x,y,z,rotation:{y:0},userData:{}};queuedBoxes.push(item);return item;}
 function flushBoxes(){const batches=new Map();for(const b of queuedBoxes){const foliage=!!b.userData.foliage,key=`${b.color}-${b.shadow}-${foliage}`;if(!batches.has(key))batches.set(key,[]);batches.get(key).push(b);}const geo=new THREE.BoxGeometry(1,1,1);for(const items of batches.values()){const first=items[0],mesh=new THREE.InstancedMesh(geo,first.material||mat(first.color),items.length),dummy=new THREE.Object3D();items.forEach((b,i)=>{dummy.position.set(b.x,b.y,b.z);dummy.rotation.set(0,b.rotation.y||0,0);dummy.scale.set(b.w,b.h,b.d);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);});mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=first.shadow;mesh.receiveShadow=first.shadow;mesh.userData.foliage=!!first.userData.foliage;scene.add(mesh);}queuedBoxes.length=0;}
@@ -151,31 +173,68 @@ function mergeStaticParts(parts){
  const merged=new THREE.BufferGeometry();merged.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));merged.setAttribute("normal",new THREE.Float32BufferAttribute(normals,3));merged.setAttribute("uv",new THREE.Float32BufferAttribute(uvs,2));merged.setIndex(indices);for(const g of groups)merged.addGroup(g.start,g.count,g.materialIndex);merged.computeBoundingSphere();return new THREE.Mesh(merged,materials);
 }
 function makeWarrior(color=0x466e62){
- const group=new THREE.Group(),armor=mat(color,.62,.12),skin=mat(0x9a704f),dark=mat(0x242e29),gold=mat(0xc69b59,.48,.42),chestMat=mat(0x9b8059,.55,.25),packMat=mat(0x493b2d),bootMat=mat(0x171d1b);
+ const group=new THREE.Group(),armor=mat(color,.48,.18),skin=mat(0x9a704f,.82),dark=mat(0x242e29,.72,.08),gold=mat(0xc69b59,.38,.52),chestMat=mat(0x9b8059,.48,.3),packMat=mat(0x493b2d,.82),bootMat=mat(0x171d1b,.7,.12),steel=mat(0x68736e,.34,.72),cloth=mat(0x342c25,.9);
  const fixed=[];const addFixed=(geometry,material,x,y,z,rx=0,ry=0,rz=0)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.rotation.set(rx,ry,rz);fixed.push(m);return m;};
- addFixed(new THREE.CapsuleGeometry(.43,.78,3,7),armor,0,1.28,0);addFixed(new THREE.BoxGeometry(.72,.52,.13),chestMat,0,1.45,.39);addFixed(new THREE.SphereGeometry(.27,10,8),skin,0,2.15,0);addFixed(new THREE.TorusGeometry(.27,.115,6,10),gold,0,2.29,0,Math.PI/2);addFixed(new THREE.SphereGeometry(.16,8,6),mat(0x8e3e2d),0,2.36,0);addFixed(new THREE.BoxGeometry(.62,.72,.25),packMat,0,1.32,-.42);
- const armParts=[];for(const side of [-1,1]){const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.14,.52,2,6),armor);arm.position.set(side*.52,1.34,.02);arm.rotation.z=side*.18;group.add(arm);armParts.push(arm);addFixed(new THREE.SphereGeometry(.22,7,6),gold,side*.53,1.68,.02);}
- addFixed(new THREE.CylinderGeometry(.43,.43,.12,10),gold,0,.88,0);
- const legParts=[];for(const side of [-1,1]){const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.17,.58,2,6),dark);leg.position.set(side*.21,.39,0);group.add(leg);legParts.push(leg);addFixed(new THREE.BoxGeometry(.26,.16,.4),bootMat,side*.21,.12,.1);}
- addFixed(new THREE.CylinderGeometry(.12,.15,.58,7),mat(0x62462e),-.34,1.58,-.42,-.2,0,0);
+ // Layered torso, breastplate, collar, belt and shoulder protection.
+ addFixed(new THREE.CapsuleGeometry(.43,.78,5,10),armor,0,1.28,0);
+ addFixed(new THREE.BoxGeometry(.72,.52,.13),chestMat,0,1.45,.39);
+ addFixed(new THREE.BoxGeometry(.075,.58,.045),gold,-.19,1.45,.47,-.12,0,-.1);
+ addFixed(new THREE.BoxGeometry(.075,.58,.045),gold,.19,1.45,.47,.12,0,.1);
+ addFixed(new THREE.BoxGeometry(.82,.12,.17),dark,0,1.02,.35);
+ addFixed(new THREE.BoxGeometry(.19,.16,.08),gold,0,1.02,.45);
+ addFixed(new THREE.TorusGeometry(.29,.065,8,16),steel,0,1.91,0,Math.PI/2);
+ // Head, enclosed helmet, brow, cheek guards and crest.
+ addFixed(new THREE.SphereGeometry(.255,16,12),skin,0,2.15,0);
+ addFixed(new THREE.SphereGeometry(.29,16,10,0,Math.PI*2,0,Math.PI*.62),steel,0,2.2,0);
+ addFixed(new THREE.BoxGeometry(.52,.09,.12),gold,0,2.18,.22);
+ addFixed(new THREE.BoxGeometry(.13,.28,.12),steel,-.25,2.02,.02,0,0,-.18);
+ addFixed(new THREE.BoxGeometry(.13,.28,.12),steel,.25,2.02,.02,0,0,.18);
+ addFixed(new THREE.ConeGeometry(.075,.36,8),gold,0,2.48,-.02);
+ addFixed(new THREE.BoxGeometry(.62,.72,.25),packMat,0,1.32,-.42);
+ addFixed(new THREE.BoxGeometry(.48,.12,.08),gold,0,1.58,-.57);
+ const armParts=[];for(const side of [-1,1]){
+  const upper=new THREE.Mesh(new THREE.CapsuleGeometry(.14,.52,4,8),armor);upper.position.set(side*.52,1.34,.02);upper.rotation.z=side*.18;group.add(upper);armParts.push(upper);
+  addFixed(new THREE.SphereGeometry(.24,12,8),steel,side*.55,1.67,.02);
+  addFixed(new THREE.BoxGeometry(.22,.25,.25),gold,side*.55,1.66,.18,0,0,side*.18);
+  addFixed(new THREE.CylinderGeometry(.15,.17,.2,10),dark,side*.53,1.05,.05,0,0,Math.PI/2);
+ }
+ addFixed(new THREE.CylinderGeometry(.43,.43,.12,16),gold,0,.88,0);
+ const legParts=[];for(const side of [-1,1]){
+  const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.17,.58,4,8),dark);leg.position.set(side*.21,.39,0);group.add(leg);legParts.push(leg);
+  addFixed(new THREE.BoxGeometry(.26,.16,.4),bootMat,side*.21,.12,.1);
+  addFixed(new THREE.BoxGeometry(.28,.2,.12),steel,side*.21,.57,.13);
+  addFixed(new THREE.BoxGeometry(.23,.08,.12),gold,side*.21,.57,.2);
+ }
+ addFixed(new THREE.CylinderGeometry(.12,.15,.58,10),cloth,-.34,1.58,-.42,-.2,0,0);
  const merged=mergeStaticParts(fixed);merged.castShadow=true;merged.receiveShadow=true;group.add(merged);
- const weaponRig=new THREE.Group();const stock=new THREE.Mesh(new THREE.BoxGeometry(.16,.17,.82),mat(0x59432f));stock.position.set(.55,1.42,.12);weaponRig.add(stock);const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.72,7),mat(0x343c3a,.45,.65));barrel.rotation.x=Math.PI/2;barrel.position.set(.55,1.47,.68);weaponRig.add(barrel);const grip=new THREE.Mesh(new THREE.BoxGeometry(.11,.28,.13),mat(0x3d3028));grip.position.set(.55,1.2,.32);weaponRig.add(grip);const scope=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,.32,8),mat(0x2b3431,.4,.65));scope.rotation.x=Math.PI/2;scope.position.set(.55,1.62,.23);weaponRig.add(scope);const secondBarrel=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.68,7),mat(0x343c3a,.45,.65));secondBarrel.rotation.x=Math.PI/2;secondBarrel.position.set(.69,1.47,.68);weaponRig.add(secondBarrel);group.add(weaponRig);group.userData.weaponRig=weaponRig;group.userData.limbs={arms:armParts,legs:legParts};
+ const weaponRig=new THREE.Group(),gunMetal=mat(0x343c3a,.3,.82),gunPoly=mat(0x292e2b,.72,.08);
+ const stock=new THREE.Mesh(new THREE.BoxGeometry(.16,.17,.82),mat(0x59432f,.72));stock.position.set(.55,1.42,.12);weaponRig.add(stock);
+ const receiver=new THREE.Mesh(new THREE.BoxGeometry(.2,.2,.48),gunMetal);receiver.position.set(.55,1.47,.48);weaponRig.add(receiver);
+ const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.72,12),gunMetal);barrel.rotation.x=Math.PI/2;barrel.position.set(.55,1.47,.82);weaponRig.add(barrel);
+ const muzzle=new THREE.Mesh(new THREE.CylinderGeometry(.065,.045,.13,12),steel);muzzle.rotation.x=Math.PI/2;muzzle.position.set(.55,1.47,1.2);weaponRig.add(muzzle);
+ const grip=new THREE.Mesh(new THREE.BoxGeometry(.11,.28,.13),gunPoly);grip.position.set(.55,1.2,.38);weaponRig.add(grip);
+ const magazine=new THREE.Mesh(new THREE.BoxGeometry(.13,.32,.18),mat(0x414640,.62,.3));magazine.position.set(.55,1.23,.59);magazine.rotation.x=-.12;weaponRig.add(magazine);
+ const rail=new THREE.Mesh(new THREE.BoxGeometry(.12,.045,.52),steel);rail.position.set(.55,1.59,.53);weaponRig.add(rail);
+ const scope=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,.32,12),mat(0x2b3431,.25,.75));scope.rotation.x=Math.PI/2;scope.position.set(.55,1.68,.48);weaponRig.add(scope);
+ const lens=new THREE.Mesh(new THREE.CircleGeometry(.052,12),mat(0x6d9a9a,.2,.5));lens.position.set(.55,1.68,.65);weaponRig.add(lens);
+ group.add(weaponRig);group.userData.weaponRig=weaponRig;group.userData.limbs={arms:armParts,legs:legParts};
  return group;
 }
 function initGame(){
  if(renderer)return;
  solidObstacles.length=0;
  const canvas=$("game-canvas");
- scene=new THREE.Scene();scene.background=new THREE.Color(0xb18b62);scene.fog=new THREE.FogExp2(0xb18b62,.0065);
+ scene=new THREE.Scene();scene.background=new THREE.Color(0xb18b62);scene.fog=new THREE.FogExp2(0xb18b62,.0052);
  camera=new THREE.PerspectiveCamera(66,innerWidth/innerHeight,.1,260);
- renderer=new THREE.WebGLRenderer({canvas,antialias:false,powerPreference:"high-performance",alpha:false,stencil:false,depth:true,precision:"mediump"});
- renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;
+ renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:"high-performance",alpha:false,stencil:false,depth:true,precision:"highp"});
+ renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.16;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
  clock=new THREE.Clock();
- scene.add(new THREE.HemisphereLight(0xffe8c8,0x39483b,2.25));
- const sun=new THREE.DirectionalLight(0xffd7a2,2.6);sun.name="sun-light";sun.position.set(-38,58,24);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.near=1;sun.shadow.camera.far=180;sun.shadow.camera.left=-85;sun.shadow.camera.right=85;sun.shadow.camera.top=85;sun.shadow.camera.bottom=-85;sun.shadow.bias=-.00025;scene.add(sun);
- const fill=new THREE.DirectionalLight(0xa9c4bd,.55);fill.position.set(40,22,-35);scene.add(fill);
+ scene.add(new THREE.HemisphereLight(0xffe8c8,0x39483b,2.0));
+ const ambientFill=new THREE.AmbientLight(0xe0c7a0,.22);scene.add(ambientFill);
+ const sun=new THREE.DirectionalLight(0xffd7a2,3.0);sun.name="sun-light";sun.position.set(-38,58,24);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.near=1;sun.shadow.camera.far=180;sun.shadow.camera.left=-85;sun.shadow.camera.right=85;sun.shadow.camera.top=85;sun.shadow.camera.bottom=-85;sun.shadow.bias=-.00025;scene.add(sun);
+ const fill=new THREE.DirectionalLight(0xa9c4bd,.72);fill.position.set(40,22,-35);scene.add(fill);
  // Wide desert terrain and a playable fortified district.
- const groundMat=new THREE.MeshStandardMaterial({color:0xffffff,map:noiseTexture(126,174),roughness:1});const ground=new THREE.Mesh(new THREE.PlaneGeometry(arenaSize,arenaSize),groundMat);ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+ const groundMap=noiseTexture(126,174);const groundMat=new THREE.MeshStandardMaterial({color:0xffffff,map:groundMap,normalMap:groundMap.userData.normalMap,normalScale:new THREE.Vector2(.42,.42),roughness:.96,metalness:0});const ground=new THREE.Mesh(new THREE.PlaneGeometry(arenaSize,arenaSize,1,1),groundMat);ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
  const innerGround=new THREE.Mesh(new THREE.PlaneGeometry(76,76),mat(0xa88a61));innerGround.rotation.x=-Math.PI/2;innerGround.position.y=.012;innerGround.receiveShadow=true;scene.add(innerGround);
  const ridgeItems=[];for(let i=0;i<54;i++){const a=i/54*Math.PI*2,r=94+(i%5)*5;ridgeItems.push({x:Math.cos(a)*r,y:5+(i%4)*1.8,z:Math.sin(a)*r,ry:-a,sx:5+(i%4)*2,sy:8+(i%6)*2,sz:5+(i%3)*2});}const ridges=instanced(new THREE.ConeGeometry(1,1,5),mat(0x6e6552),ridgeItems,false);ridges.userData.foliage=true;
  // Main roads and courtyard stonework.
