@@ -16,3 +16,29 @@
 
 .hud-settings{border:1px solid #ffffff55;background:#182321bb;padding:9px 12px;font-size:11px;white-space:nowrap}.hud-settings:hover{background:#30453b}
 @media(max-width:620px){.hud-settings{padding:7px;font-size:9px}.hud-top{gap:5px}.hud-health{width:76px}}
+
+/* Rebuilt touch controls and mobile performance layout */
+.aim-button,.sprint-button{display:none;border:1px solid #ffffff77;background:#243d36e8;border-radius:50%;width:54px;height:54px;font-size:11px;font-weight:bold;box-shadow:0 4px 18px #0008;touch-action:none;user-select:none;-webkit-user-select:none}
+.sprint-button{background:#5b5030e8}
+.fire-button,.jump-button{touch-action:none;user-select:none;-webkit-user-select:none}
+@media(max-width:700px){
+ .mobile-controls{display:block;position:absolute;inset:0;pointer-events:none;z-index:4;touch-action:none}
+ .look-zone{position:absolute;right:0;top:14%;bottom:24%;width:62%;pointer-events:auto;touch-action:none;background:transparent}
+ .joystick{left:18px;bottom:104px;width:124px;height:124px;pointer-events:auto;touch-action:none;z-index:5}
+ #stick-knob{left:39px;top:39px;width:44px;height:44px}
+ .mobile-right-hint{right:8px;bottom:190px;z-index:1;pointer-events:none;opacity:.55}
+ .hud-top{z-index:6;padding:8px 9px;gap:7px}
+ .hud-bottom{z-index:7;gap:7px;padding:9px 10px 12px}
+ .weapon-panel{min-width:86px;padding:7px 8px}
+ .weapon-panel select{max-width:90px;font-size:9px}
+ .reload-button{padding:8px 7px;min-height:38px;font-size:9px}
+ .fire-button{width:58px;height:58px;font-size:11px}
+ .jump-button{width:46px;height:46px;font-size:10px}
+ .aim-button,.sprint-button{display:inline-grid;place-items:center;width:46px;height:46px;font-size:9px}
+ .move-hint{display:none}
+}
+@media(max-width:390px){
+ .hud-title small{font-size:7px}.match-objective{padding-left:5px}.match-objective b{font-size:15px}.hud-health{width:62px}.hud-exit{padding:6px;font-size:8px}.hud-settings{padding:6px;font-size:8px}
+ .hud-bottom{gap:5px;padding-left:7px;padding-right:7px}.weapon-panel{min-width:76px}.weapon-panel b{font-size:10px}.weapon-panel select{max-width:78px}.reload-button{font-size:8px;padding:7px 5px}.fire-button{width:52px;height:52px}.aim-button,.sprint-button{width:42px;height:42px}.jump-button{width:42px;height:42px}
+ .joystick{width:112px;height:112px;left:13px;bottom:94px}#stick-knob{left:34px;top:34px}
+}
